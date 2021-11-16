@@ -1,9 +1,11 @@
 <script lang="ts">
-  import * as Parser from "../lib/better-parser";
+  import * as Parser from "../lib/parser";
 
   let value: string = "";
 
-  $: console.log(Parser.lex(value));
+  $: {
+    console.log("parse result", Parser.parse(Parser.lex(value)));
+  }
 </script>
 
 <textarea bind:value />
@@ -12,5 +14,4 @@
 <pre>
 {JSON.stringify(Parser.parse(value), undefined, 2)}
 </pre>
--->
 -->
