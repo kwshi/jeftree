@@ -5,6 +5,7 @@
     "dev": "svelte-kit dev",
     "build": "svelte-kit build",
     "preview": "svelte-kit preview",
+    "test": "",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --ignore-path .gitignore --check --plugin-search-dir=. . && eslint --ignore-path .gitignore .",
@@ -12,6 +13,7 @@
   },
   "devDependencies": {
     "@sveltejs/kit": "next",
+    "@types/tap": "^15.0.5",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
     "@typescript-eslint/parser": "^4.31.1",
     "eslint": "^7.32.0",
@@ -22,6 +24,8 @@
     "svelte": "^3.42.6",
     "svelte-check": "^2.2.6",
     "svelte-preprocess": "^4.9.4",
+    "tap": "^15.0.10",
+    "ts-node": "^10.4.0",
     "tslib": "^2.3.1",
     "typescript": "^4.4.3"
   },
