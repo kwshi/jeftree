@@ -31,6 +31,9 @@
   },
   "type": "module",
   "dependencies": {
+    "@codemirror/state": "^0.19.5",
+    "@codemirror/text": "^0.19.5",
+    "@codemirror/view": "^0.19.18",
     "@types/parsimmon": "^1.10.6",
     "chevrotain": "^9.1.0",
     "parsimmon": "^1.18.0"
