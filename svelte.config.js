@@ -1,7 +1,7 @@
 import preprocess from "svelte-preprocess";
 
 import adapterNetlify from "@sveltejs/adapter-netlify";
-import adapterNetlify from "@sveltejs/adapter-static";
+import adapterStatic from "@sveltejs/adapter-static";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
