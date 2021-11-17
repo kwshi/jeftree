@@ -1,7 +1,7 @@
 import preprocess from "svelte-preprocess";
 
 import adapterNetlify from "@sveltejs/adapter-netlify";
-import adapterStatic from "@sveltejs/adapter-static";
+//import adapterStatic from "@sveltejs/adapter-static";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -10,10 +10,11 @@ const config = {
   preprocess: preprocess({ postcss: true }),
   compilerOptions: { dev: true },
   kit: {
-    adapter: adapterStatic({
-      pages: "build",
-      assets: "build",
-    }),
+    adapter: adapterNetlify(),
+    //adapter: adapterStatic({
+    //  pages: "build",
+    //  assets: "build",
+    //}),
   },
 };
 
