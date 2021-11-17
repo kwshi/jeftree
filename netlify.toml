@@ -2,6 +2,10 @@
 command = 'npm run build'
 publish = 'build'
 
+# setting env `AWS_LAMBDA_JS_RUNTIME=nodejs14.x` here doesn't work, see:
 # https://github.com/sveltejs/kit/issues/2687#issuecomment-951257050
-[build.environment]
-AWS_LAMBDA_JS_RUNTIME = "nodejs14.x"
+# https://answers.netlify.com/t/aws-lambda-js-runtime-nodejs14-x/32161/2
+
+# workaround: https://github.com/sveltejs/kit/issues/2687#issuecomment-951188975
+[functions]
+node_bundler = 'esbuild'
