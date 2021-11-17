@@ -9,6 +9,7 @@ specifiers:
   '@codemirror/text': ^0.19.5
   '@codemirror/view': ^0.19.18
   '@sveltejs/adapter-netlify': ^1.0.0-next.35
+  '@sveltejs/adapter-static': ^1.0.0-next.21
   '@sveltejs/kit': next
   '@types/parsimmon': ^1.10.6
   '@types/tap': ^15.0.5
@@ -48,6 +49,7 @@ dependencies:
 
 devDependencies:
   '@sveltejs/adapter-netlify': 1.0.0-next.35
+  '@sveltejs/adapter-static': 1.0.0-next.21
   '@sveltejs/kit': 1.0.0-next.196_svelte@3.44.1
   '@types/tap': 15.0.5
   '@typescript-eslint/eslint-plugin': 4.33.0_cc617358c89d3f38c52462f6d809db4c
@@ -546,6 +548,10 @@ packages:
     dependencies:
       '@iarna/toml': 2.2.5
       esbuild: 0.13.13
+    dev: true
+
+  /@sveltejs/adapter-static/1.0.0-next.21:
+    resolution: {integrity: sha512-B4+QoUVAaANKx+mHntG8SqF45zbj3Ct4Akg/cGauo6COyfKZRhO5OsMa+wPuT2TKJBZC4eEDK0p+p9nyQBkxKQ==}
     dev: true
 
   /@sveltejs/kit/1.0.0-next.196_svelte@3.44.1:
