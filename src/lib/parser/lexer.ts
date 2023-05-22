@@ -1,42 +1,58 @@
-import * as Syntax from "./syntax";
+import * as Token from "./token";
+import type * as Tree from "$lib/tree";
 
-const defs = [
-  { token: Syntax.TokenType.BrackL, pattern: /\[/ },
-  { token: Syntax.TokenType.BrackR, pattern: /\]/ },
-  { token: Syntax.TokenType.Slash2, pattern: /\/\// },
-  { token: Syntax.TokenType.Slash, pattern: /\// },
-  // TODO quoted string support
+interface TokenDef {
+  token: Token.Tag | null;
+  pattern: RegExp;
+}
+
+export interface Error {
+  readonly range: Tree.Range;
+  // TODO recovery & keep erroring char(s)
+}
+
+export interface Result {
+  readonly tokens: readonly Token.Token[];
+  readonly errors: readonly Error[];
+}
+
+const defs: readonly TokenDef[] = [
+  { token: Token.Tag.BrackL, pattern: /\[/ },
+  { token: Token.Tag.BrackR, pattern: /\]/ },
+  { token: Token.Tag.Slash, pattern: /\// },
+  { token: Token.Tag.Id, pattern: /#([\w\-]+)/ },
   {
-    token: Syntax.TokenType.Text,
-    pattern: /[^\/\[\]\s]([^\/\[\]]*[^\/\[\]\s])?/,
+    token: Token.Tag.Text,
+    pattern: /[\w\-'.]+(?:\s[\w\-'.]+)*/,
   },
+  { token: Token.Tag.Quote, pattern: /"((?:[^"\\]|\\"|\\\\)+)"/ },
   { token: null, pattern: /\s+/ },
 ].map((def) => ({ ...def, pattern: new RegExp(def.pattern, "myu") }));
 
-export default (input: string): Syntax.LexResult => {
-  const pos = { offset: 0, row: 0, col: 0 };
-  const tokens: Syntax.Token[] = [];
-  const errs: Syntax.LexError[] = [];
+export default (input: string): Result => {
+  const pos = { offset: 0, row: 0, column: 0 };
+  const tokens: Token.Token[] = [];
+  const errors: Error[] = [];
 
   outer: while (pos.offset < input.length) {
+    const start = { ...pos };
+
     for (const def of defs) {
       def.pattern.lastIndex = pos.offset;
       const match = def.pattern.exec(input);
 
       if (match === null) continue;
 
-      const start = { ...pos };
-
       const lines = match[0]!.split("\n");
       pos.offset = def.pattern.lastIndex;
       pos.row += lines.length - 1;
-      pos.col = lines[lines.length - 1]!.length;
+      pos.column = lines[lines.length - 1]!.length;
 
       const end = { ...pos };
 
       if (def.token !== null)
         tokens.push({
-          type: def.token,
+          tag: def.token,
           text: match[0]!,
           range: { start, end },
         });
@@ -45,14 +61,13 @@ export default (input: string): Syntax.LexResult => {
     }
 
     // no token patterns matched, push error & skip one character
-    errs.push({ range: { start: pos } });
     if (input[pos.offset++] === "\n") {
       ++pos.row;
-      pos.col = 0;
-    } else ++pos.col;
+      pos.column = 0;
+    } else ++pos.column;
+
+    errors.push({ range: { start, end: { ...pos } } });
   }
 
-  // TODO not a fan of this special end token business
-  tokens.push({ type: Syntax.TokenType.End, text: "", range: { start: pos } });
-  return errs.length === 0 ? { ok: true, tokens } : { ok: false, errs };
+  return { tokens, errors };
 };

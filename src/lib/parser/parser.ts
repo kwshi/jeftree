@@ -1,31 +1,50 @@
-import * as Syntax from "./syntax";
+import * as Tree from "$lib/tree";
+import * as Token from "./token";
 
-const enum StateType {
+export const enum ErrorTag {
+  UntokenableInput,
+  UnexpectedEnd,
+  UnacceptableToken,
+  ExtraClose,
+}
+
+export interface Error {
+  range: Tree.Range;
+  data:
+    | { tag: ErrorTag.UnexpectedEnd }
+    | { tag: ErrorTag.UnacceptableToken; token: Token.Token }
+    | { tag: ErrorTag.ExtraClose; token: Token.Token };
+}
+
+export interface Result {
+  readonly nodes: readonly Tree.Node.Node[];
+  readonly errors: readonly Error[];
+}
+
+const enum StateTag {
   Subtrees,
   SubtreeRoot,
   SubtreeLeaf,
-  End,
 }
 
 interface PartialNode {
-  label: string;
-  leaf: string | null;
-  children: Syntax.Node[];
+  labels: Tree.Node.Label[];
+  children: Tree.Node.Node[];
 }
 
 interface State {
-  tag: StateType;
-  nodes: Syntax.Node[]; // finalized, top-level nodes
+  tag: StateTag;
+  nodes: Tree.Node.Node[]; // finalized, top-level nodes
   stack: PartialNode[];
-  errs: Syntax.ParseError[];
+  errs: Error[];
 }
 
-type Action = (state: State, token: Syntax.Token) => void;
+type Action = (state: State, token: Token.Token) => void;
 
 const peek = (state: State) => state.stack[state.stack.length - 1];
 
 const actionOpenChild: Action = (state) => {
-  state.tag = StateType.SubtreeRoot;
+  state.tag = StateTag.SubtreeRoot;
   state.stack.push({
     label: "",
     leaf: null,
@@ -34,90 +53,99 @@ const actionOpenChild: Action = (state) => {
 };
 
 const actionClose =
-  (finalize: (partial: PartialNode) => Syntax.Node["data"]): Action =>
+  (finalize: (partial: PartialNode) => Tree.Node.Node["data"]): Action =>
   (state, token) => {
     const s = state.stack.pop();
     if (typeof s === "undefined") {
       state.errs.push({
         range: token.range,
-        data: { tag: Syntax.ErrorTag.ExtraClose, token },
+        data: { tag: ErrorTag.ExtraClose, token },
       });
       return;
     }
 
     const parent = peek(state);
-    state.tag = StateType.Subtrees;
+    state.tag = StateTag.Subtrees;
     (parent?.children ?? state.nodes).push({
       label: s.label,
       data: finalize(s),
     });
   };
 
-const action: Record<StateType, Partial<Record<Syntax.TokenType, Action>>> = {
-  [StateType.SubtreeRoot]: {
-    [Syntax.TokenType.BrackR]: actionClose(() => ({
-      type: Syntax.NodeType.Bare,
+const action: Record<StateTag, Partial<Record<Token.Tag, Action>>> = {
+  [StateTag.SubtreeRoot]: {
+    [Token.Tag.BrackR]: actionClose(() => ({
+      type: Tree.Node.Tag.Bare,
     })),
-    [Syntax.TokenType.Text]: (state, token) => {
-      state.tag = StateType.SubtreeRoot;
+    [Token.Tag.Text]: (state, token) => {
+      state.tag = StateTag.SubtreeRoot;
       peek(state)!.label = token.text;
     },
-    [Syntax.TokenType.Slash]: (state) => {
-      state.tag = StateType.SubtreeLeaf;
+    [Token.Tag.Slash]: (state) => {
+      state.tag = StateTag.SubtreeLeaf;
     },
-    [Syntax.TokenType.Slash2]: (state) => {
-      state.tag = StateType.SubtreeLeaf;
-    },
-    [Syntax.TokenType.BrackL]: actionOpenChild,
+    //[Token.Tag.Slash2]: (state) => {
+    //  state.tag = StateTag.SubtreeLeaf;
+    //},
+    [Token.Tag.BrackL]: actionOpenChild,
   },
-  [StateType.SubtreeLeaf]: {
-    [Syntax.TokenType.BrackR]: actionClose((partial) => ({
-      type: Syntax.NodeType.Leaf,
+  [StateTag.SubtreeLeaf]: {
+    [Token.Tag.BrackR]: actionClose((partial) => ({
+      type: Tree.Node.Tag.Leaf,
       leaf: partial.leaf!,
       roof: false,
     })),
-    [Syntax.TokenType.Text]: (state, token) => {
-      state.tag = StateType.SubtreeLeaf;
+    [Token.Tag.Text]: (state, token) => {
+      state.tag = StateTag.SubtreeLeaf;
       peek(state)!.leaf = token.text;
     },
   },
-  [StateType.Subtrees]: {
-    [Syntax.TokenType.BrackL]: actionOpenChild,
-    [Syntax.TokenType.BrackR]: actionClose((partial) => ({
-      type: Syntax.NodeType.Parent,
+  [StateTag.Subtrees]: {
+    [Token.Tag.BrackL]: actionOpenChild,
+    [Token.Tag.BrackR]: actionClose((partial) => ({
+      type: Tree.Node.Tag.Parent,
       children: partial.children,
     })),
-    [Syntax.TokenType.End]: (state, token) => {
-      if (state.stack.length === 0) return;
-      state.errs.push({
-        range: token.range,
-        data: { tag: Syntax.ErrorTag.UnexpectedEnd },
-      });
-    },
+    //[Token.Tag.End]: (state, token) => {
+    //  if (state.stack.length === 0) return;
+    //  state.errs.push({
+    //    range: token.range,
+    //    data: { tag: Syntax.ErrorTag.UnexpectedEnd },
+    //  });
+    //},
   },
-  [StateType.End]: {},
 };
 
-export default (tokens: Iterable<Syntax.Token>): Syntax.ParseResult => {
+const end = (state: State): void => {
+  if (state.tag !== StateTag.Subtrees) {
+  }
+};
+
+export const parse = (tokens: Iterable<Token.Token>): Result => {
   const state: State = {
-    tag: StateType.Subtrees,
+    tag: StateTag.Subtrees,
     stack: [],
     nodes: [],
     errs: [],
   };
 
   for (const token of tokens) {
-    const act = action[state.tag][token.type];
+    const act = action[state.tag][token.tag];
 
     if (typeof act !== "undefined") act(state, token);
     else
       state.errs.push({
         range: token.range,
-        data: { tag: Syntax.ErrorTag.UnacceptableToken, token },
+        data: { tag: ErrorTag.UnacceptableToken, token },
       });
   }
 
-  return state.errs.length === 0
-    ? { ok: true, nodes: state.nodes }
-    : { ok: false, errs: state.errs };
+  end(state);
+
+  return Object.freeze({
+    nodes: Object.freeze(state.nodes),
+    errors: Object.freeze(state.errs),
+  });
 };
+
+export default parse;

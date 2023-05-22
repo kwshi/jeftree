@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Parser from "../lib/parser";
-  import * as Syntax from "../lib/parser/syntax";
+  import type * as Syntax from "../lib/tree/node";
   import * as CmView from "@codemirror/view";
   import * as CmState from "@codemirror/state";
   import * as CmGutter from "@codemirror/gutter";
@@ -45,12 +45,9 @@
 
   $: {
     const lexResult = Parser.lex(value);
-    if (lexResult.ok) {
-      const result = Parser.parse(lexResult.tokens);
-      if (result.ok) {
-        tree = result.nodes;
-      }
-    }
+    const result = Parser.parse(lexResult.tokens);
+    console.log(lexResult);
+    tree = result.nodes;
   }
 </script>
 
@@ -58,7 +55,13 @@
 
 {#each tree as node}
   {#key node}
-    <!-- TODO maybe key'ing & recreating every time contents are changed is inefficient, but maybe who cares? -->
+    <!-- TODO maybe key'ing & recreating every time contents are changed is inefficient, but maybe who cares? we do this because of size updates-- updating a left child doesn't remeasure the location of a right child, for some reason. -->
     <Node {node} />
   {/key}
 {/each}
+
+<style>
+  :root {
+    font-family: "EB Garamond";
+  }
+</style>
